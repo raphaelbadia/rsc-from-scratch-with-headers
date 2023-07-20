@@ -10,28 +10,32 @@ const app = express();
 app.use(express.static("./dist"));
 
 app.get("/:page", async (req, res) => {
-  const mod = await import(
-    join(process.cwd(), "dist", "pages", req.params.page)
-  );
-  const Page = mod.default;
-  const reactTree = await createReactTree(
-    <Layout bgColor={req.params.page === "list" ? "white" : "black"}>
-      <Page {...req.query} />
-    </Layout>
-  );
+  try {
+    const mod = await import(
+      join(process.cwd(), "dist", "pages", req.params.page)
+    );
+    const Page = mod.default;
+    const reactTree = await createReactTree(
+      <Layout bgColor={req.params.page === "list" ? "white" : "black"}>
+        <Page {...req.query} />
+      </Layout>
+    );
 
-  if (req.query.jsx === "") {
-    res.end(JSON.stringify(reactTree, escapeJsx));
-    return;
-  }
+    if (req.query.jsx === "") {
+      res.end(JSON.stringify(reactTree, escapeJsx));
+      return;
+    }
 
-  const html = `${renderToString(reactTree)}
+    const html = `${renderToString(reactTree)}
   <script>
   window.__initialMarkup=\`${JSON.stringify(reactTree, escapeJsx)}\`;
   </script>
   <script src="/client.js" type="module"></script>`;
 
-  res.end(html);
+    res.end(html);
+  } catch (e) {
+    res.end("not supported");
+  }
 });
 
 const createReactTree = async (jsx) => {
